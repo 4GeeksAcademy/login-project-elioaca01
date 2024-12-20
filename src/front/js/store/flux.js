@@ -1,54 +1,65 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
-			message: null,
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			]
+			token:localStorage.getItem('token') || null,
+			current_user:localStorage.getItem('current_user') || null
 		},
 		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-
-			getMessage: async () => {
+			register: async (user) => {
 				try{
-					// fetching data from the backend
-					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
-					const data = await resp.json()
-					setStore({ message: data.message })
-					// don't forget to return something, that is how the async resolves
-					return data;
+					const response = await fetch(`${process.env.BACKEND_URL}/register`, {
+						method:"POST",
+						headers:{
+							"Content-Type":"application/json"
+						},
+						body:JSON.stringify(user)
+					})
+					return response.status
 				}catch(error){
-					console.log("Error loading message from backend", error)
+					console.log(error)
+					return (error)
 				}
 			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
+			login: async (user) => {
+				try{
+					const response = await fetch(`${process.env.BACKEND_URL}/login`,{
+						method:"POST",
+						headers:{
+							"Content-Type":"application/json"
+						},
+						body: JSON.stringify(user)
+					})
 
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
+					const data = await response.json()
 
-				//reset the global store
-				setStore({ demo: demo });
+					if (response.ok){
+						setStore({
+							token:data.token,
+							current_user:data.current_user
+						})
+						localStorage.setItem("token",data.token)
+						localStorage.setItem("current_user",data.current_user)
+						return(response.status)
+
+					}else{
+						return(response.status)
+					}
+					
+				}catch(error){
+					return (error)
+				}
+			},
+			close: () => {
+				setStore({
+					token:null,
+					current_user:null
+				})
+				localStorage.removeItem("token") 
+				localStorage.removeItem("current_user")
+		
 			}
-		}
-	};
+		}	
+	}
 };
 
 export default getState;
